@@ -1,0 +1,14 @@
+{
+  "name": "applyflow",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "api:dev": "npm run dev -w apps/api",
+    "api:worker": "npm run dev:worker -w apps/api",
+    "api:build": "npm run build -w apps/api"
+  },
+  "engines": { "node": ">=20" }
+}

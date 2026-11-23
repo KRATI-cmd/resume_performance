@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "ApplyFlow",
+  "version": "0.1.0",
+  "description": "Tailor your resume to the job posting you're viewing.",
+  "action": { "default_title": "ApplyFlow", "default_popup": "popup.html" },
+  "background": { "service_worker": "background.js", "type": "module" },
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["http://localhost:4000/*"],
+  "optional_host_permissions": ["https://*/*", "http://*/*"]
+}

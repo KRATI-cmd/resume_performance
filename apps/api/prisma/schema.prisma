@@ -1,0 +1,70 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
+}
+
+enum ApplicationStatus {
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model UserProfile {
+  id         String   @id @default(uuid())
+  email      String   @unique
+  fullName   String
+  headline   String?
+  baseResume Json     @default("{}")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  chunks       ExperienceChunk[]
+  applications JobApplication[]
+}
+
+model ExperienceChunk {
+  id         String                      @id @default(uuid())
+  userId     String
+  category   String
+  title      String
+  bulletText String
+  tags       String[]
+  embedding  Unsupported("vector(1536)")
+  createdAt  DateTime                    @default(now())
+
+  user UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model JobApplication {
+  id               String            @id @default(uuid())
+  userId           String
+  jdHash           String
+  companyName      String?
+  roleTitle        String?
+  sourceUrl        String
+  rawJdText        String
+  status           ApplicationStatus @default(PROCESSING)
+  matchScore       Int?
+  missingKeywords  String[]
+  tailoredBullets  Json?
+  outreachDraft    String?
+  tailoredPdfUrl   String?
+  tokensUsed       Int?
+  processingTimeMs Int?
+  errorMessage     String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  user UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jdHash])
+  @@index([userId, createdAt])
+}

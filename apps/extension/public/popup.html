@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>ApplyFlow</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <strong>ApplyFlow</strong>
+      <button id="toggle-settings" class="link" type="button">Settings</button>
+    </header>
+
+    <section id="settings" hidden>
+      <label>API URL <input id="api-url" type="url" /></label>
+      <label>Web app URL <input id="web-url" type="url" /></label>
+      <label>Email <input id="email" type="email" /></label>
+      <label>Full name <input id="full-name" type="text" /></label>
+      <button id="connect" type="button">Save &amp; connect</button>
+      <p id="settings-msg" class="msg" role="status"></p>
+    </section>
+
+    <main id="main">
+      <p id="page-info" class="muted">Reading page…</p>
+      <textarea id="jd" rows="8" placeholder="Job description (select text on the page to override)"></textarea>
+      <button id="analyze" type="button">Analyze &amp; tailor</button>
+      <p id="status" class="msg" role="status"></p>
+      <div id="result"></div>
+    </main>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
