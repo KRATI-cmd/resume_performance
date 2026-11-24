@@ -8,7 +8,7 @@ export type Settings = {
 
 export const DEFAULT_SETTINGS: Settings = {
   apiUrl: 'http://localhost:4000',
-  webUrl: 'http://localhost:5173',
+  webUrl: 'http://localhost:5174',
   userId: null,
   email: '',
   fullName: '',

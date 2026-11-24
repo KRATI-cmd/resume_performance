@@ -3,9 +3,14 @@
   "name": "ApplyFlow",
   "version": "0.1.0",
   "description": "Tailor your resume to the job posting you're viewing.",
-  "action": { "default_title": "ApplyFlow", "default_popup": "popup.html" },
+  "icons": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" },
+  "action": {
+    "default_title": "ApplyFlow",
+    "default_popup": "popup.html",
+    "default_icon": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" }
+  },
   "background": { "service_worker": "background.js", "type": "module" },
-  "permissions": ["activeTab", "scripting", "storage"],
+  "permissions": ["activeTab", "scripting", "storage", "notifications"],
   "host_permissions": ["http://localhost:4000/*"],
   "optional_host_permissions": ["https://*/*", "http://*/*"]
 }

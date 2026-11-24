@@ -70,7 +70,14 @@ function render(run: RunState): void {
   switch (run.phase) {
     case 'idle': setStatus(''); break;
     case 'processing': setStatus('Analyzing… you can close this popup, the badge shows the score when done.'); break;
-    case 'failed': setStatus(run.error, 'error'); break;
+    case 'failed':
+      setStatus(
+        /No experience chunks/i.test(run.error)
+          ? 'No experience saved for this account yet. Add your resume bullets in the ApplyFlow web app (My experience), then try again.'
+          : run.error,
+        'error',
+      );
+      break;
     case 'completed': setStatus('Done', 'ok'); renderResult(run.application, run.cached); break;
   }
 }
@@ -84,6 +91,7 @@ async function readActiveTab(): Promise<void> {
     if (!page) throw new Error('No content found.');
     jd.value = page.text;
     pageInfo.textContent = `${page.fromSelection ? 'Selected text from' : 'Detected on'}: ${page.url}`;
+    pageInfo.title = page.url;
   } catch (err) {
     pageInfo.textContent = err instanceof Error ? err.message : 'Could not read the page.';
   }

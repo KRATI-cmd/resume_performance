@@ -5,7 +5,7 @@ An autonomous job-hunt and resume-tailoring copilot. Paste a job description (or
 ```
 apps/
   api/        Node.js, Express, TypeScript, Prisma, BullMQ     (:4000)
-  web/        React, Vite, Tailwind                            (:5173)
+  web/        React, Vite, Tailwind                            (:5174)
   extension/  Chrome Manifest V3 (TypeScript, esbuild)
 docker-compose.yml   PostgreSQL 16 + pgvector, Redis 7
 ```
@@ -53,10 +53,10 @@ Use three terminals from the repo root:
 ```bash
 npm run api:dev      # API on http://localhost:4000
 npm run api:worker   # BullMQ worker (required, jobs won't process without it)
-npm run dev -w apps/web   # Web app on http://localhost:5173
+npm run dev -w apps/web   # Web app on http://localhost:5174
 ```
 
-Then open http://localhost:5173, create a profile, add experience bullets under **My experience**, and analyze a job.
+Then open http://localhost:5174, create a profile, add experience bullets under **My experience**, and analyze a job.
 
 ### LLM configuration (`apps/api/.env`)
 

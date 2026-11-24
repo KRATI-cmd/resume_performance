@@ -30,14 +30,39 @@ async function setBadge(text: string, color: string): Promise<void> {
 
 const scoreColor = (n: number) => (n >= 75 ? '#16a34a' : n >= 50 ? '#d97706' : '#dc2626');
 
+const NOTIFICATION_ID = 'applyflow-result';
+
+/** Desktop notification so the user doesn't have to notice the badge. Never throws. */
+async function notify(title: string, message: string): Promise<void> {
+  try {
+    await chrome.notifications.create(NOTIFICATION_ID, {
+      type: 'basic',
+      iconUrl: chrome.runtime.getURL('icon128.png'),
+      title,
+      message,
+      priority: 2,
+      requireInteraction: false,
+    });
+  } catch {
+    /* notifications disabled by the OS or user: the badge still works */
+  }
+}
+
 async function finish(application: Application, cached: boolean): Promise<void> {
   if (application.status === 'FAILED') {
-    await saveRun({ phase: 'failed', error: application.errorMessage ?? 'Analysis failed', sourceUrl: application.sourceUrl });
+    const error = application.errorMessage ?? 'Analysis failed';
+    await saveRun({ phase: 'failed', error, sourceUrl: application.sourceUrl });
     await setBadge('!', '#dc2626');
+    await notify('ApplyFlow: analysis failed', error.slice(0, 200));
     return;
   }
   await saveRun({ phase: 'completed', application, cached });
   await setBadge(String(application.matchScore ?? '✓'), scoreColor(application.matchScore ?? 0));
+  // A cached result returns instantly while the popup is open, so no notification is needed.
+  if (!cached) {
+    const where = [application.roleTitle, application.companyName].filter(Boolean).join(' at ');
+    await notify(`ApplyFlow: ${application.matchScore ?? 0}% match`, `${where || 'Your job'} is ready. Click to view.`);
+  }
 }
 
 /**
@@ -113,6 +138,16 @@ chrome.runtime.onMessage.addListener((msg: Message, _sender, sendResponse: (r: R
     return true;
   }
   return false;
+});
+
+// Clicking the notification opens the popup (Chrome 127+); otherwise falls back to the web app.
+chrome.notifications.onClicked.addListener((id) => {
+  if (id !== NOTIFICATION_ID) return;
+  void chrome.notifications.clear(id);
+  chrome.action.openPopup().catch(async () => {
+    const { webUrl } = await loadSettings();
+    await chrome.tabs.create({ url: webUrl });
+  });
 });
 
 // If the worker was restarted mid-job, resume polling for it.
