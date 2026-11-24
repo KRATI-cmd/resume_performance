@@ -128,3 +128,22 @@ Serve `apps/web/dist` from the same origin as the API (or set `CORS_ORIGIN`).
 | Job stays `PROCESSING` | The worker isn't running (`npm run api:worker`). |
 | `Embedding model returned N dimensions; expected 1536` | Use a 1536-dim embedding model. |
 | Extension: "Cannot reach the API" | API not running, or API URL in Settings is wrong. |
+
+## Resumes, auto-selection and autofill
+
+**First-time flow (web app):** sign up, then **Resumes** → choose the *position* the resume is for (e.g. "SDE-2 Backend") → upload a PDF/DOCX/TXT or paste text → review the extracted bullets and contact details (untick anything wrong) → save. Add one resume per role; up to 10.
+
+**Auto-selection:** when you analyze a job without choosing a resume, the API picks the resume whose best bullets are most similar to the job (plus a small bonus when its target-role keywords appear in the job). Choose a resume explicitly to override; the result shows which one was used.
+
+**Autofill (extension → *Autofill form* tab):**
+- **Autofill this page** fills only *empty* fields it recognises (name, email, phone, links, location, notice period, CTC, years of experience, yes/no questions, …). It never submits, never clicks Next, never overwrites existing values, and never touches passwords, OTPs or card fields.
+- **Learn from this page:** fill a form yourself once, press *Learn*, tick what to keep, then *Save*. Next time those questions are filled for you. Skill questions are keyed per skill, so "years with Node.js" is never reused for "years with Python".
+- **Multi-step forms (LinkedIn Easy Apply):** press **Alt+Shift+F** on each step. The popup closes when you click the page, so the shortcut fills without it. Change the key at `chrome://extensions/shortcuts`.
+- Add or edit details up front in the web app under **Autofill details**.
+
+Autofill reads the top page only; forms inside cross-origin iframes (some embedded ATS widgets) are not supported yet.
+
+```bash
+npm test -w apps/api && npm test -w apps/extension
+npm run test:e2e:resumes -w apps/api   # needs API + worker running
+```

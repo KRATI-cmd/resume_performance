@@ -20,13 +20,30 @@
       <p id="settings-msg" class="msg" role="status"></p>
     </section>
 
+    <nav class="tabs" role="tablist">
+      <button id="tab-job" class="tab active" role="tab" aria-selected="true" type="button">Tailor for job</button>
+      <button id="tab-form" class="tab" role="tab" aria-selected="false" type="button">Autofill form</button>
+    </nav>
+
     <main id="main">
+      <label for="resume">Resume</label>
+      <select id="resume"><option value="">Auto: best match for this job</option></select>
       <p id="page-info" class="muted">Reading page…</p>
-      <textarea id="jd" rows="8" placeholder="Job description (select text on the page to override)"></textarea>
+      <textarea id="jd" rows="7" placeholder="Job description (select text on the page to override)"></textarea>
+      <p id="hint" class="msg warn" role="alert" hidden></p>
       <button id="analyze" type="button">Analyze &amp; tailor</button>
       <p id="status" class="msg" role="status"></p>
       <div id="result"></div>
     </main>
+
+    <section id="form-panel" hidden>
+      <p class="muted">Fills only the empty fields it recognises, on this page or Easy Apply step. It never submits or clicks Next, and never touches passwords or card details.</p>
+      <button id="fill" type="button">Autofill this page</button>
+      <button id="learn" class="secondary" type="button">Learn from this page</button>
+      <p class="muted small">Tip: press <b>Alt+Shift+F</b> to autofill each step without opening this popup.</p>
+      <p id="form-status" class="msg" role="status"></p>
+      <div id="form-result"></div>
+    </section>
 
     <script type="module" src="popup.js"></script>
   </body>

@@ -100,3 +100,27 @@ The worker retrieves the top 6 chunks by cosine similarity, and the LLM may only
 npm test          # unit tests (hashing, grounding guard, schema)
 npm run test:e2e  # smoke test against a running API + worker
 ```
+
+---
+
+## Resumes  🔒
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/api/v1/resumes` | `{ resumes: [{ id, targetRole, fileName, createdAt, bulletCount }] }` |
+| POST | `/api/v1/resumes/parse` | multipart: `targetRole` + `file` (PDF/DOCX/TXT, ≤5 MB) **or** `text` (≥200 chars). Returns `{ draft }` for review; **saves nothing**. Bullets that can't be verified against the resume text (invented numbers/wording) are dropped, with a warning. |
+| POST | `/api/v1/resumes` | Save a reviewed draft `{ targetRole, fileName?, rawText, bullets[], answers[] }` → `201 { resume, created, skipped, answersSaved }`. Max 10 resumes (`409`). |
+| PATCH | `/api/v1/resumes/:id` | `{ targetRole }` |
+| DELETE | `/api/v1/resumes/:id` | Deletes the resume and its bullets; past applications keep their results. `204` |
+
+`POST /api/v1/jobs/analyze` accepts an optional `resumeId`. Omit it to auto-select. A completed job is returned from cache unless a *different* `resumeId` is requested, which re-runs it. Applications include `resumeId` and `resumeAutoSelected`.
+
+## Autofill answers  🔒
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/api/v1/profile/answers` | `{ answers: [{ id, key, label, value }] }` |
+| PUT | `/api/v1/profile/answers` | `{ answers: [{ key, label, value }] }` upsert by key (≤200). Sensitive keys (password, otp, cvv, card, ssn, aadhaar, token…) are refused: `{ saved, refused }` |
+| DELETE | `/api/v1/profile/answers/:id` | `204` |
+
+Other limits: request bodies over 1 MB return `413`; NUL characters are stripped from all text input; saving the same bullet twice within one resume is skipped (`skipped` in the response).

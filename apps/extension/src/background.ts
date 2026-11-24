@@ -1,27 +1,9 @@
+import { runAutofill } from './autofill';
+import { api, ApiError } from './client';
 import { loadRun, loadSettings, saveRun, saveSettings, type Application, type Message, type Reply, type Settings } from './shared';
 
 const POLL_MS = 2000;
 const MAX_WAIT_MS = 3 * 60_000;
-
-class ApiError extends Error {}
-
-async function api<T>(settings: Settings, path: string, init: RequestInit = {}, auth = true): Promise<{ status: number; data: T }> {
-  const headers = new Headers(init.headers);
-  if (init.body) headers.set('content-type', 'application/json');
-  if (auth) {
-    if (!settings.userId) throw new ApiError('Not connected. Open Settings and connect your account.');
-    headers.set('x-user-id', settings.userId);
-  }
-  let res: Response;
-  try {
-    res = await fetch(`${settings.apiUrl.replace(/\/$/, '')}/api/v1${path}`, { ...init, headers });
-  } catch {
-    throw new ApiError(`Cannot reach the API at ${settings.apiUrl}`);
-  }
-  const body = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
-  if (!res.ok) throw new ApiError(body?.error?.message ?? `Request failed (${res.status})`);
-  return { status: res.status, data: body as T };
-}
 
 async function setBadge(text: string, color: string): Promise<void> {
   await chrome.action.setBadgeText({ text });
@@ -85,7 +67,7 @@ async function analyze(msg: Extract<Message, { type: 'analyze' }>): Promise<void
   await setBadge('…', '#6366f1');
   const { data, status } = await api<{ cached: boolean; application: Application }>(settings, '/jobs/analyze', {
     method: 'POST',
-    body: JSON.stringify({ sourceUrl: msg.sourceUrl, rawJdText: msg.rawJdText }),
+    body: JSON.stringify({ sourceUrl: msg.sourceUrl, rawJdText: msg.rawJdText, ...(msg.resumeId ? { resumeId: msg.resumeId } : {}) }),
   });
 
   if (status === 200 && data.cached) return finish(data.application, true);
@@ -148,6 +130,27 @@ chrome.notifications.onClicked.addListener((id) => {
     const { webUrl } = await loadSettings();
     await chrome.tabs.create({ url: webUrl });
   });
+});
+
+// Alt+Shift+F: autofill the current page/step without opening the popup. Essential for
+// multi-step forms (Easy Apply) because clicking the page closes the popup.
+chrome.commands.onCommand.addListener((command) => {
+  if (command !== 'autofill') return;
+  void (async () => {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id || !tab.url || !/^https?:/.test(tab.url)) throw new Error('This page cannot be autofilled.');
+      const { plan, filledCount, scanned } = await runAutofill(tab.id);
+      if (scanned === 0) return void (await notify('ApplyFlow autofill', 'No form fields found on this page or step.'));
+      const need = plan.needsYou.length;
+      await notify(
+        `ApplyFlow: filled ${filledCount} field${filledCount === 1 ? '' : 's'}`,
+        need ? `${need} still need you: ${plan.needsYou.slice(0, 3).join('; ')}${need > 3 ? '…' : ''}` : 'Review the highlighted fields, then continue.',
+      );
+    } catch (err) {
+      await notify('ApplyFlow autofill failed', err instanceof Error ? err.message : 'Unexpected error');
+    }
+  })();
 });
 
 // If the worker was restarted mid-job, resume polling for it.

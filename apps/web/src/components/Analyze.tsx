@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { api, streamJob } from '../api';
-import type { Application, Stage } from '../types';
+import type { Application, Resume, Stage } from '../types';
 import { Result } from './Result';
 
 const STAGES: { key: Stage; label: string }[] = [
@@ -10,9 +10,10 @@ const STAGES: { key: Stage; label: string }[] = [
   { key: 'saving', label: 'Saving' },
 ];
 
-type Props = { userId: string; initial?: Application | null; onDone?: () => void };
+type Props = { userId: string; resumes: Resume[]; initial?: Application | null; onDone?: () => void };
 
-export function Analyze({ userId, initial, onDone }: Props) {
+export function Analyze({ userId, resumes, initial, onDone }: Props) {
+  const [resumeId, setResumeId] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
   const [rawJdText, setRawJdText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -35,7 +36,7 @@ export function Analyze({ userId, initial, onDone }: Props) {
     setStage(null);
     setBusy(true);
     try {
-      const { cached, application } = await api.analyze(sourceUrl.trim(), rawJdText);
+      const { cached, application } = await api.analyze(sourceUrl.trim(), rawJdText, resumeId || undefined);
       if (cached) {
         setResult({ application, cached: true });
         setBusy(false);
@@ -63,6 +64,15 @@ export function Analyze({ userId, initial, onDone }: Props) {
   return (
     <div className="space-y-5">
       <form onSubmit={submit} className="card space-y-4">
+        <div>
+          <label htmlFor="resume" className="mb-1 block text-sm font-medium">Resume</label>
+          <select id="resume" className="input" value={resumeId} onChange={(e) => setResumeId(e.target.value)} disabled={busy}>
+            <option value="">Auto: pick the best match for this job</option>
+            {resumes.map((r) => (
+              <option key={r.id} value={r.id}>{r.targetRole}</option>
+            ))}
+          </select>
+        </div>
         <div>
           <label htmlFor="url" className="mb-1 block text-sm font-medium">Job URL</label>
           <input id="url" type="url" required className="input" placeholder="https://company.com/careers/123"
@@ -93,7 +103,16 @@ export function Analyze({ userId, initial, onDone }: Props) {
       )}
 
       {error && <div role="alert" className="card border-red-200 bg-red-50 text-sm text-red-800">{error}</div>}
-      {result && <Result application={result.application} cached={result.cached} />}
+      {result && (
+        <Result
+          application={result.application}
+          cached={result.cached}
+          resumeLabel={(() => {
+            const r = resumes.find((x) => x.id === result.application.resumeId);
+            return r ? `${r.targetRole}${result.application.resumeAutoSelected ? ' (auto-selected)' : ''}` : undefined;
+          })()}
+        />
+      )}
     </div>
   );
 }

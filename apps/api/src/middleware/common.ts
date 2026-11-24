@@ -63,6 +63,17 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
     res.status(500).json({ error: { code: 'DATABASE_ERROR', message: 'Database error' } });
     return;
   }
+  if (err instanceof Error && err.name === 'MulterError') {
+    const tooBig = (err as { code?: string }).code === 'LIMIT_FILE_SIZE';
+    res.status(tooBig ? 413 : 400).json({
+      error: { code: tooBig ? 'FILE_TOO_LARGE' : 'UPLOAD_ERROR', message: tooBig ? 'File is too large (max 5 MB)' : err.message },
+    });
+    return;
+  }
+  if ((err as { type?: string }).type === 'entity.too.large') {
+    res.status(413).json({ error: { code: 'PAYLOAD_TOO_LARGE', message: 'Request body is too large (max 1 MB)' } });
+    return;
+  }
   if (err instanceof SyntaxError && 'body' in err) {
     res.status(400).json({ error: { code: 'INVALID_JSON', message: 'Malformed JSON body' } });
     return;

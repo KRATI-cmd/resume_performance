@@ -6,11 +6,15 @@
   "scripts": {
     "build": "tsc --noEmit && node build.mjs",
     "watch": "node build.mjs --watch",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test \"src/**/*.test.ts\""
   },
   "devDependencies": {
     "@types/chrome": "^0.0.287",
+    "@types/jsdom": "^30.0.0",
     "esbuild": "^0.24.0",
+    "jsdom": "^25.0.1",
+    "tsx": "^4.23.15",
     "typescript": "^5.7.0"
   }
 }

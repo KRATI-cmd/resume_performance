@@ -1,4 +1,4 @@
-import type { Application, ChunkInput, JobEvent, Profile } from './types';
+import type { Answer, Application, ChunkInput, JobEvent, Profile, Resume, ResumeDraft } from './types';
 
 const USER_KEY = 'applyflow.userId';
 
@@ -38,7 +38,8 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, init: RequestInit = {}, userId = session.get()): Promise<{ status: number; data: T }> {
   const headers = new Headers(init.headers);
-  if (init.body) headers.set('content-type', 'application/json');
+  // Let the browser set the multipart boundary for FormData.
+  if (init.body && !(init.body instanceof FormData)) headers.set('content-type', 'application/json');
   if (userId) headers.set('x-user-id', userId);
 
   let res: Response;
@@ -60,20 +61,72 @@ export const api = {
     return data.profile;
   },
 
-  async addChunks(chunks: ChunkInput[]): Promise<{ created: number }> {
-    const { data } = await request<{ created: number }>('/profile/chunks', {
+  async addChunks(chunks: ChunkInput[]): Promise<{ created: number; skipped: number }> {
+    const { data } = await request<{ created: number; skipped: number }>('/profile/chunks', {
       method: 'POST',
       body: JSON.stringify({ chunks }),
     });
     return data;
   },
 
-  async analyze(sourceUrl: string, rawJdText: string): Promise<{ cached: boolean; application: Application }> {
+  async analyze(sourceUrl: string, rawJdText: string, resumeId?: string): Promise<{ cached: boolean; application: Application }> {
     const { data } = await request<{ cached: boolean; application: Application }>('/jobs/analyze', {
       method: 'POST',
-      body: JSON.stringify({ sourceUrl, rawJdText }),
+      body: JSON.stringify({ sourceUrl, rawJdText, ...(resumeId ? { resumeId } : {}) }),
     });
     return data;
+  },
+
+  async listResumes(): Promise<Resume[]> {
+    const { data } = await request<{ resumes: Resume[] }>('/resumes');
+    return data.resumes;
+  },
+
+  async parseResume(input: { targetRole: string; file?: File; text?: string }): Promise<ResumeDraft> {
+    const fd = new FormData();
+    fd.set('targetRole', input.targetRole);
+    if (input.file) fd.set('file', input.file);
+    else if (input.text) fd.set('text', input.text);
+    const { data } = await request<{ draft: ResumeDraft }>('/resumes/parse', { method: 'POST', body: fd });
+    return data.draft;
+  },
+
+  async saveResume(draft: ResumeDraft): Promise<{ created: number; skipped: number }> {
+    const { data } = await request<{ created: number; skipped: number }>('/resumes', {
+      method: 'POST',
+      body: JSON.stringify({
+        targetRole: draft.targetRole,
+        fileName: draft.fileName,
+        rawText: draft.rawText,
+        bullets: draft.bullets,
+        answers: draft.answers.map(({ key, label, value }) => ({ key, label, value })),
+      }),
+    });
+    return data;
+  },
+
+  async renameResume(id: string, targetRole: string): Promise<void> {
+    await request(`/resumes/${id}`, { method: 'PATCH', body: JSON.stringify({ targetRole }) });
+  },
+
+  async deleteResume(id: string): Promise<void> {
+    await request(`/resumes/${id}`, { method: 'DELETE' });
+  },
+
+  async listAnswers(): Promise<Answer[]> {
+    const { data } = await request<{ answers: Answer[] }>('/profile/answers');
+    return data.answers;
+  },
+
+  async saveAnswers(answers: Answer[]): Promise<void> {
+    await request('/profile/answers', {
+      method: 'PUT',
+      body: JSON.stringify({ answers: answers.map(({ key, label, value }) => ({ key, label, value })) }),
+    });
+  },
+
+  async deleteAnswer(id: string): Promise<void> {
+    await request(`/profile/answers/${id}`, { method: 'DELETE' });
   },
 
   async getJob(id: string): Promise<Application> {

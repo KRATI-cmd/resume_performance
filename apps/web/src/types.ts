@@ -20,6 +20,8 @@ export type Application = {
   missingKeywords: string[];
   tailoredBullets?: TailoredBullet[] | null;
   outreachDraft?: string | null;
+  resumeId?: string | null;
+  resumeAutoSelected?: boolean;
   tokensUsed: number | null;
   processingTimeMs: number | null;
   errorMessage: string | null;
@@ -37,5 +39,20 @@ export type JobEvent = {
 };
 
 export type Profile = { id: string; email: string; fullName: string; headline: string | null };
+
+export type Resume = { id: string; targetRole: string; fileName: string | null; createdAt: string; bulletCount: number };
+
+export type Answer = { id?: string; key: string; label: string; value: string };
+
+export type DraftBullet = { category: string; title: string; bulletText: string; tags: string[] };
+
+export type ResumeDraft = {
+  targetRole: string;
+  fileName: string | null;
+  rawText: string;
+  bullets: DraftBullet[];
+  answers: Answer[];
+  warnings: string[];
+};
 
 export type ChunkInput = { category: string; title: string; bulletText: string; tags: string[] };

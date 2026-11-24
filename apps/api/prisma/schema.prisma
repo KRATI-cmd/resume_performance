@@ -26,6 +26,39 @@ model UserProfile {
 
   chunks       ExperienceChunk[]
   applications JobApplication[]
+  answers      FormAnswer[]
+  resumes      Resume[]
+}
+
+/// One uploaded resume, tied to the position the user is targeting with it.
+model Resume {
+  id         String   @id @default(uuid())
+  userId     String
+  targetRole String
+  fileName   String?
+  rawText    String
+  createdAt  DateTime @default(now())
+
+  user         UserProfile       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chunks       ExperienceChunk[]
+  applications JobApplication[]
+
+  @@index([userId])
+}
+
+/// Reusable application-form answers (name, phone, notice period, ...), keyed per user.
+model FormAnswer {
+  id        String   @id @default(uuid())
+  userId    String
+  key       String
+  label     String
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
 }
 
 model ExperienceChunk {
@@ -36,11 +69,14 @@ model ExperienceChunk {
   bulletText String
   tags       String[]
   embedding  Unsupported("vector(1536)")
+  resumeId   String?
   createdAt  DateTime                    @default(now())
 
-  user UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resume Resume?     @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([resumeId])
 }
 
 model JobApplication {
@@ -60,10 +96,14 @@ model JobApplication {
   tokensUsed       Int?
   processingTimeMs Int?
   errorMessage     String?
+  resumeId         String?
+  /// true when the API picked the resume automatically (user did not choose one)
+  resumeAutoSelected Boolean         @default(false)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
-  user UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resume Resume?     @relation(fields: [resumeId], references: [id], onDelete: SetNull)
 
   @@unique([userId, jdHash])
   @@index([userId, createdAt])

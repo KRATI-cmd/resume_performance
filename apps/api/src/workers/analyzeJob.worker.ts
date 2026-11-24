@@ -8,6 +8,7 @@ import { createRedis, publishJobEvent, type JobEvent } from '../lib/redis';
 import { findRelevantChunks, TOP_K_CHUNKS } from '../services/chunk.service';
 import { embedText } from '../services/embedding.service';
 import { generateTailoring } from '../services/jobAnalysis.service';
+import { pickBestResume } from '../services/resume.service';
 
 async function emitProgress(applicationId: string, stage: NonNullable<JobEvent['stage']>): Promise<void> {
   await publishJobEvent({ applicationId, status: 'PROCESSING', stage });
@@ -28,9 +29,22 @@ async function processAnalyzeJob(job: Job<AnalyzeJobData>): Promise<void> {
 
   // 2) Hybrid RAG: cosine-similarity top-K over this user's verified experience.
   await emitProgress(applicationId, 'retrieval');
-  const chunks = await findRelevantChunks(userId, vector, TOP_K_CHUNKS);
+
+  // Use the resume the user chose, otherwise auto-select the best match for this job.
+  let resumeId = application.resumeId;
+  let autoSelected = false;
+  if (!resumeId) {
+    const pick = await pickBestResume(userId, vector, application.rawJdText);
+    if (pick) {
+      resumeId = pick.id;
+      autoSelected = true;
+      log.info({ resumeId, targetRole: pick.targetRole, score: pick.score }, 'auto-selected resume');
+    }
+  }
+
+  const chunks = await findRelevantChunks(userId, vector, TOP_K_CHUNKS, resumeId);
   if (chunks.length === 0) {
-    throw new UnrecoverableError('No experience chunks found. Upload experience via POST /api/v1/profile/chunks first.');
+    throw new UnrecoverableError('No resume experience found. Upload a resume and choose its target position first.');
   }
   log.info({ retrieved: chunks.length, topSimilarity: chunks[0]?.similarity }, 'retrieved chunks');
 
@@ -48,6 +62,8 @@ async function processAnalyzeJob(job: Job<AnalyzeJobData>): Promise<void> {
     where: { id: applicationId },
     data: {
       status: 'COMPLETED',
+      resumeId,
+      resumeAutoSelected: autoSelected,
       companyName: output.companyName,
       roleTitle: output.roleTitle,
       matchScore: output.matchScore,

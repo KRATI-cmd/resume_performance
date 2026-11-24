@@ -23,6 +23,8 @@ export type Application = {
   roleTitle: string | null;
   sourceUrl: string;
   matchScore: number | null;
+  resumeId?: string | null;
+  resumeAutoSelected?: boolean;
   missingKeywords: string[];
   tailoredBullets?: TailoredBullet[] | null;
   outreachDraft?: string | null;
@@ -38,7 +40,7 @@ export type RunState =
 export const STORAGE = { settings: 'settings', run: 'run' } as const;
 
 export type Message =
-  | { type: 'analyze'; sourceUrl: string; rawJdText: string }
+  | { type: 'analyze'; sourceUrl: string; rawJdText: string; resumeId?: string }
   | { type: 'connect'; settings: Settings }
   | { type: 'reset' };
 

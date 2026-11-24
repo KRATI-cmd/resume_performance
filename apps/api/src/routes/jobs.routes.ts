@@ -35,14 +35,22 @@ async function enqueueOrFail(application: JobApplication): Promise<void> {
 jobsRouter.post(
   '/analyze',
   asyncHandler(async (req, res) => {
-    const { sourceUrl, rawJdText } = analyzeBodySchema.parse(req.body);
+    const { sourceUrl, rawJdText, resumeId } = analyzeBodySchema.parse(req.body);
     const userId = req.userId;
     const jdHash = computeJdHash(rawJdText);
     const where = { userId_jdHash: { userId, jdHash } };
 
+    if (resumeId) {
+      const owned = await prisma.resume.findFirst({ where: { id: resumeId, userId }, select: { id: true } });
+      if (!owned) throw new AppError(404, 'Resume not found', 'NOT_FOUND');
+    }
+
     let application = await prisma.jobApplication.findUnique({ where });
 
-    if (application?.status === 'COMPLETED') {
+    // A completed result is reused unless the user explicitly asks for a different resume.
+    const differentResume = Boolean(resumeId) && application?.resumeId !== resumeId;
+
+    if (application?.status === 'COMPLETED' && !differentResume) {
       res.status(200).json({ cached: true, application });
       return;
     }
@@ -52,10 +60,10 @@ jobsRouter.post(
       return;
     }
 
-    if (application?.status === 'FAILED') {
+    if (application?.status === 'FAILED' || application?.status === 'COMPLETED') {
       application = await prisma.jobApplication.update({
         where: { id: application.id },
-        data: { status: 'PROCESSING', errorMessage: null, sourceUrl },
+        data: { status: 'PROCESSING', errorMessage: null, sourceUrl, resumeId: resumeId ?? null, resumeAutoSelected: false },
       });
       await enqueueOrFail(application);
       res.status(202).json({ cached: false, application });
@@ -64,7 +72,7 @@ jobsRouter.post(
 
     try {
       application = await prisma.jobApplication.create({
-        data: { userId, jdHash, sourceUrl, rawJdText, status: 'PROCESSING' },
+        data: { userId, jdHash, sourceUrl, rawJdText, status: 'PROCESSING', resumeId: resumeId ?? null },
       });
     } catch (err) {
       // A concurrent identical request won the unique-constraint race: return its record.

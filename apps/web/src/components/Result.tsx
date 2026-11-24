@@ -43,7 +43,7 @@ function ScoreRing({ score }: { score: number }) {
   );
 }
 
-export function Result({ application: a, cached }: { application: Application; cached?: boolean }) {
+export function Result({ application: a, cached, resumeLabel }: { application: Application; cached?: boolean; resumeLabel?: string }) {
   if (a.status === 'FAILED') {
     return (
       <div className="card border-red-200 bg-red-50 text-sm text-red-800">
@@ -63,6 +63,7 @@ export function Result({ application: a, cached }: { application: Application; c
           <a href={a.sourceUrl} target="_blank" rel="noreferrer" className="block truncate text-xs text-brand-600 hover:underline">
             {a.sourceUrl}
           </a>
+          {resumeLabel && <p className="mt-1 text-xs text-slate-600">Resume used: <span className="font-medium">{resumeLabel}</span></p>}
           <p className="mt-2 text-xs text-slate-500">
             {cached && <span className="mr-2 rounded bg-brand-50 px-1.5 py-0.5 font-medium text-brand-700">cached</span>}
             {a.tokensUsed != null && `${a.tokensUsed.toLocaleString()} tokens`}

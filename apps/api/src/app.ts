@@ -7,6 +7,7 @@ import { redis } from './lib/redis';
 import { errorHandler, notFoundHandler } from './middleware/common';
 import { jobsRouter } from './routes/jobs.routes';
 import { profileRouter } from './routes/profile.routes';
+import { resumesRouter } from './routes/resumes.routes';
 
 export function createApp(): Express {
   const app = express();
@@ -28,6 +29,7 @@ export function createApp(): Express {
 
   app.use('/api/v1/jobs', jobsRouter);
   app.use('/api/v1/profile', profileRouter);
+  app.use('/api/v1/resumes', resumesRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

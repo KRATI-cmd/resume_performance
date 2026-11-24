@@ -9,6 +9,12 @@
     "default_popup": "popup.html",
     "default_icon": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" }
   },
+  "commands": {
+    "autofill": {
+      "suggested_key": { "default": "Alt+Shift+F" },
+      "description": "Autofill the current form step with your saved answers"
+    }
+  },
   "background": { "service_worker": "background.js", "type": "module" },
   "permissions": ["activeTab", "scripting", "storage", "notifications"],
   "host_permissions": ["http://localhost:4000/*"],
